@@ -1,0 +1,47 @@
+name: Unzip & Build Jerood APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Unzip Project Code
+        run: |
+          unzip -o jerood_app-1.zip -d extracted_app
+          # نقل الملفات للجذر إن كانت داخل مجلد فرعي
+          if [ -d "extracted_app/jerood_flutter_app" ]; then
+            cp -r extracted_app/jerood_flutter_app/* .
+          else
+            cp -r extracted_app/* .
+          fi
+
+      - name: Set up Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Get Dependencies
+        run: flutter pub get
+
+      - name: Build Release APK
+        run: flutter build apk --release
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Jerood-Release-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
